@@ -11,8 +11,8 @@ use Illuminate\Database\Eloquent\ModelNotFoundException;
 
 /**
  * Persists async job progress so a client can poll instead of getting a
- * fire-and-forget response. The queued job that writes here lands in a later
- * issue; this service owns the state machine only.
+ * fire-and-forget response. Writers such as BulkCompleteTodosJob transition
+ * rows through this service.
  */
 class JobStatusService
 {

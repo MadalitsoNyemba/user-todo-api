@@ -8,7 +8,7 @@ use OpenApi\Attributes as OA;
 
 /**
  * OpenAPI operations for /api/v1/todos. Kept off TodoController so controllers
- * stay thin. Bulk complete is a separate issue.
+ * stay thin.
  */
 final class TodoEndpoints
 {
@@ -89,6 +89,58 @@ final class TodoEndpoints
         ],
     )]
     public function store(): void {}
+
+    #[OA\Post(
+        path: '/api/v1/todos/bulk-complete',
+        operationId: 'todosBulkComplete',
+        description: 'Accepts up to 500 todo ids for async completion on the redis queue. Returns 202 with a job_id to poll at status_url. Foreign ids are skipped; already-completed todos are left alone so retries are idempotent.',
+        summary: 'Bulk-complete todos',
+        security: [['bearerAuth' => []]],
+        requestBody: new OA\RequestBody(
+            required: true,
+            content: new OA\JsonContent(
+                required: ['ids'],
+                properties: [
+                    new OA\Property(
+                        property: 'ids',
+                        type: 'array',
+                        maxItems: 500,
+                        minItems: 1,
+                        items: new OA\Items(type: 'integer'),
+                    ),
+                ],
+                type: 'object',
+            ),
+        ),
+        tags: ['Todos'],
+        responses: [
+            new OA\Response(
+                response: 202,
+                description: 'Accepted for processing.',
+                content: new OA\JsonContent(
+                    properties: [
+                        new OA\Property(property: 'success', type: 'boolean', example: true),
+                        new OA\Property(property: 'message', type: 'string', example: 'Accepted for processing.'),
+                        new OA\Property(
+                            property: 'data',
+                            properties: [
+                                new OA\Property(property: 'job_id', type: 'string', format: 'uuid'),
+                                new OA\Property(property: 'status', type: 'string', example: 'queued'),
+                                new OA\Property(property: 'status_url', type: 'string', format: 'uri'),
+                            ],
+                            type: 'object',
+                        ),
+                        new OA\Property(property: 'errors', nullable: true, example: null),
+                        new OA\Property(property: 'meta', nullable: true, example: null),
+                    ],
+                    type: 'object',
+                ),
+            ),
+            new OA\Response(response: 401, description: 'Unauthenticated.', content: new OA\JsonContent(ref: '#/components/schemas/ErrorEnvelope')),
+            new OA\Response(response: 422, description: 'Validation failed.', content: new OA\JsonContent(ref: '#/components/schemas/ErrorEnvelope')),
+        ],
+    )]
+    public function bulkComplete(): void {}
 
     #[OA\Get(
         path: '/api/v1/todos/{id}',

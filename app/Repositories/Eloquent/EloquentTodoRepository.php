@@ -96,4 +96,32 @@ class EloquentTodoRepository implements TodoRepositoryInterface
                 'completed_at' => now(),
             ]);
     }
+
+    public function ownedIdsAmong(int $userId, array $todoIds): array
+    {
+        if ($todoIds === []) {
+            return [];
+        }
+
+        return Todo::query()
+            ->where('user_id', $userId)
+            ->whereIn('id', $todoIds)
+            ->orderBy('id')
+            ->pluck('id')
+            ->map(static fn (mixed $id): int => (int) $id)
+            ->all();
+    }
+
+    public function countCompletedAmong(int $userId, array $todoIds): int
+    {
+        if ($todoIds === []) {
+            return 0;
+        }
+
+        return Todo::query()
+            ->where('user_id', $userId)
+            ->whereIn('id', $todoIds)
+            ->where('is_completed', true)
+            ->count();
+    }
 }

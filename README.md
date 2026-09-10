@@ -92,6 +92,10 @@ The worker runs automatically as its own service. To watch it:
 docker compose logs -f worker
 ```
 
+After `POST /api/v1/todos/bulk-complete`, the worker picks up `BulkCompleteTodosJob`
+on the redis connection; follow the same logs (or poll `GET /api/v1/jobs/{uuid}`)
+to see it move from `queued` to `completed` or `failed`.
+
 To run one in the foreground instead, for example while debugging a job:
 
 ```bash

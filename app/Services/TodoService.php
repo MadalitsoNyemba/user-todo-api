@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace App\Services;
 
 use App\Enums\TodoPriority;
+use App\Jobs\BulkCompleteTodosJob;
+use App\Models\JobStatus;
 use App\Models\Todo;
 use App\Repositories\Contracts\TodoRepositoryInterface;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
@@ -16,6 +18,8 @@ use Illuminate\Database\Eloquent\ModelNotFoundException;
  *
  * Missing or cross-tenant todos raise ModelNotFoundException → 404. A 403
  * would confirm the record exists and enable id enumeration.
+ *
+ * Bulk complete is accepted as a redis job; the client polls JobStatus by uuid.
  */
 class TodoService
 {
@@ -23,8 +27,11 @@ class TodoService
 
     private const MAX_PER_PAGE = 100;
 
+    public const BULK_COMPLETE_TYPE = 'bulk_complete_todos';
+
     public function __construct(
         private readonly TodoRepositoryInterface $todos,
+        private readonly JobStatusService $jobStatuses,
     ) {}
 
     public function list(
@@ -86,6 +93,24 @@ class TodoService
         if (! $this->todos->deleteForUser($userId, $todoId)) {
             throw (new ModelNotFoundException)->setModel(Todo::class, [$todoId]);
         }
+    }
+
+    /**
+     * @param  list<int>  $todoIds
+     */
+    public function bulkComplete(int $userId, array $todoIds): JobStatus
+    {
+        $ids = array_values(array_unique(array_map('intval', $todoIds)));
+
+        $status = $this->jobStatuses->create(
+            $userId,
+            self::BULK_COMPLETE_TYPE,
+            count($ids),
+        );
+
+        BulkCompleteTodosJob::dispatch($userId, $status->uuid, $ids);
+
+        return $status;
     }
 
     private function findOwnedOrFail(int $userId, int $todoId): Todo

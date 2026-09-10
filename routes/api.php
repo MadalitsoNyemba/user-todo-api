@@ -41,6 +41,7 @@ Route::prefix('v1')->name('api.v1.')->group(function (): void {
 
         Route::get('todos', [TodoController::class, 'index'])->name('todos.index');
         Route::post('todos', [TodoController::class, 'store'])->name('todos.store');
+        Route::post('todos/bulk-complete', [TodoController::class, 'bulkComplete'])->name('todos.bulk-complete');
         Route::get('todos/{id}', [TodoController::class, 'show'])->whereNumber('id')->name('todos.show');
         Route::patch('todos/{id}', [TodoController::class, 'update'])->whereNumber('id')->name('todos.update');
         Route::delete('todos/{id}', [TodoController::class, 'destroy'])->whereNumber('id')->name('todos.destroy');
