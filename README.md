@@ -1,66 +1,191 @@
-<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
+# User & Todo API
 
-<p align="center">
-<a href="https://github.com/laravel/framework/actions"><img src="https://github.com/laravel/framework/workflows/tests/badge.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
-</p>
+A dockerised RESTful API managing users and a per-user todo list. Layered Laravel 10 application (controllers to services to repositories) behind JWT authentication, with asynchronous work offloaded to Redis-backed queues.
 
-## About Laravel
+> **Build status:** this README describes the finished stack. Steps marked
+> _(pending)_ depend on work not yet merged and can be skipped until then.
+> This note is removed before submission.
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
+## Requirements
 
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
+- Docker Engine 24+ with Compose v2 (`docker compose`, not `docker-compose`)
+- No local PHP, Composer or MySQL needed. Everything runs in containers.
 
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
+Windows users: run from inside WSL2 with the project on the Linux filesystem
+(`~/code/...`, not `/mnt/c/...`). Bind mounts across the Windows filesystem
+boundary are slow enough to be noticeable on every request.
 
-## Learning Laravel
+## Quick start
 
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework.
+```bash
+# 1. Configuration
+cp .env.example .env
 
-You may also try the [Laravel Bootcamp](https://bootcamp.laravel.com), where you will be guided through building a modern Laravel application from scratch.
+# 2. Build and start the stack
+docker compose build
+docker compose run --rm app php artisan key:generate
+docker compose up -d
 
-If you don't feel like reading, [Laracasts](https://laracasts.com) can help. Laracasts contains thousands of video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
+# 3. Wait for db and redis to report healthy
+docker compose ps
 
-## Laravel Sponsors
+# 4. Install dependencies
+docker compose exec app composer install
 
-We would like to extend our thanks to the following sponsors for funding Laravel development. If you are interested in becoming a sponsor, please visit the [Laravel Partners program](https://partners.laravel.com).
+# 5. Application key
+docker compose exec app php artisan key:generate
 
-### Premium Partners
+# 6. JWT signing secret                                          (pending)
+docker compose exec app php artisan jwt:secret
 
-- **[Vehikl](https://vehikl.com/)**
-- **[Tighten Co.](https://tighten.co)**
-- **[WebReinvent](https://webreinvent.com/)**
-- **[Kirschbaum Development Group](https://kirschbaumdevelopment.com)**
-- **[64 Robots](https://64robots.com)**
-- **[Curotec](https://www.curotec.com/services/technologies/laravel/)**
-- **[Cyber-Duck](https://cyber-duck.co.uk)**
-- **[DevSquad](https://devsquad.com/hire-laravel-developers)**
-- **[Jump24](https://jump24.co.uk)**
-- **[Redberry](https://redberry.international/laravel/)**
-- **[Active Logic](https://activelogic.com)**
-- **[byte5](https://byte5.de)**
-- **[OP.GG](https://op.gg)**
+# 7. Schema and demo data
+docker compose exec app php artisan migrate
+docker compose exec app php artisan db:seed                    # (pending)
+```
 
-## Contributing
+The API is then at **http://localhost:8080**.
 
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
+Migrations are deliberately not run from the container entrypoint. Automatic
+migration on boot races itself the moment the app runs more than one replica,
+so it stays an explicit step here.
 
-## Code of Conduct
+### Seeded accounts _(pending)_
 
-In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
+| email | password | role |
+|---|---|---|
+| `alice@example.com` | `password` | user |
+| `bob@example.com` | `password` | user |
 
-## Security Vulnerabilities
+Two users rather than one, so tenant isolation can be checked by hand: log in
+as Alice, note a todo id, log in as Bob, request that id, receive a 404.
 
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
+## Services
 
-## License
+| service | image | purpose | host port |
+|---|---|---|---|
+| `nginx` | `nginx:1.27-alpine` | serves `public/`, proxies PHP to `app:9000` | 8080 |
+| `app` | built from `Dockerfile` (`dev` target) | PHP-FPM | — |
+| `worker` | same image as `app` | `queue:work redis` | — |
+| `db` | `mysql:8.0` | application and test schemas | 3307 |
+| `redis` | `redis:7-alpine` | queue driver and cache store | 6380 |
 
-The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+Host ports for MySQL and Redis are shifted off their defaults so the stack does
+not collide with anything already running locally. Change `FORWARD_DB_PORT` and
+`FORWARD_REDIS_PORT` in `.env` if needed.
+
+Redis is the queue driver, not only a cache. The `worker` service starts with
+the stack and consumes jobs immediately, so no extra command is needed to see
+asynchronous work processed.
+
+## The queue worker
+
+The worker runs automatically as its own service. To watch it:
+
+```bash
+docker compose logs -f worker
+```
+
+To run one in the foreground instead, for example while debugging a job:
+
+```bash
+docker compose stop worker
+docker compose exec app php artisan queue:work redis --verbose
+```
+
+Code changes are picked up on the worker's next job cycle only after a restart,
+since queue workers boot the framework once:
+
+```bash
+docker compose restart worker
+```
+
+## Tests
+
+```bash
+docker compose exec app vendor/bin/phpunit
+```
+
+Tests run against a real MySQL schema (`user_todo_api_testing`), created by
+`docker/mysql/init/01-create-test-db.sql` on first initialisation of the
+database volume. No sqlite or in-memory shortcut, so behaviour under test
+matches behaviour in the running stack, and running the suite never touches
+seeded data in the application database.
+
+Code style:
+
+```bash
+docker compose exec app vendor/bin/pint --test
+```
+
+## Common commands
+
+```bash
+docker compose exec app php artisan migrate:fresh --seed   # reset schema and data
+docker compose exec app php artisan tinker
+docker compose exec app bash                               # shell in the app container
+docker compose exec db mysql -u utapi -psecret user_todo_api
+docker compose logs -f app
+docker compose down                                        # stop, keep data
+docker compose down -v                                     # stop and destroy data
+```
+
+## Production image
+
+The `Dockerfile` has two targets. Compose uses `dev`, which carries no
+application code and expects the source to be bind-mounted, so edits are live.
+The `production` target bakes in the source, installs without dev dependencies,
+builds a class-map authoritative autoloader and disables opcache timestamp
+validation:
+
+```bash
+docker build --target production -t user-todo-api:prod .
+```
+
+CI builds this target on every pull request, so the shipping image is never an
+untested artifact.
+
+## Troubleshooting
+
+**`docker compose up` fails complaining about `.env`**
+Compose reads `.env` for both service configuration and variable interpolation.
+Run `cp .env.example .env` first.
+
+**Tests fail with `Unknown database 'user_todo_api_testing'`**
+MySQL only runs the scripts in `docker-entrypoint-initdb.d` when the data volume
+is first initialised. If the stack was started before that file existed:
+
+```bash
+docker compose down -v
+docker compose up -d
+```
+
+**Permission errors writing to `storage/` or `bootstrap/cache/`**
+The image remaps `www-data` to the UID and GID given as build arguments,
+defaulting to 1000. If `id -u` reports something else, set `UID` and `GID` in
+`.env` and rebuild with `docker compose build --no-cache app`.
+
+**Port already in use**
+Change `APP_PORT`, `FORWARD_DB_PORT` or `FORWARD_REDIS_PORT` in `.env` and run
+`docker compose up -d` again.
+
+**Jobs stay queued and never complete**
+Check the worker is alive with `docker compose ps` and
+`docker compose logs worker`. A worker that started before migrations ran will
+have failed, and `restart: unless-stopped` should have recovered it.
+
+**500 responses immediately after setup**
+Usually a missing `APP_KEY` or `JWT_SECRET`. Re-run steps 5 and 6.
+
+## Architecture
+
+_Added as the layers land. See `CONTRIBUTING.md` for the layering rules._
+
+## API reference
+
+_Added with the endpoints. Interactive documentation will be available at
+`/api/documentation`._
+
+## AI usage
+
+Models, tools and prompts used during this build are listed in
+[`docs/AI_USAGE.md`](docs/AI_USAGE.md).
