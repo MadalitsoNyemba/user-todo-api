@@ -21,27 +21,34 @@ boundary are slow enough to be noticeable on every request.
 # 1. Configuration
 cp .env.example .env
 
-# 2. Build and start the stack
+# 2. Build the images
 docker compose build
+
+# 3. Install dependencies
+docker compose run --rm app composer install
+
+# 4. Application key
 docker compose run --rm app php artisan key:generate
+
+# 5. JWT signing secret                                          (pending)
+docker compose run --rm app php artisan jwt:secret
+
+# 6. Start the stack
 docker compose up -d
 
-# 3. Wait for db and redis to report healthy
+# 7. Wait for db and redis to report healthy
 docker compose ps
 
-# 4. Install dependencies
-docker compose exec app composer install
-
-# 5. Application key
-docker compose exec app php artisan key:generate
-
-# 6. JWT signing secret                                          (pending)
-docker compose exec app php artisan jwt:secret
-
-# 7. Schema and demo data
+# 8. Schema and demo data
 docker compose exec app php artisan migrate
 docker compose exec app php artisan db:seed                    # (pending)
 ```
+
+Dependencies and the application key/JWT secret are generated with
+`docker compose run --rm` before `docker compose up -d`. Compose reads
+`env_file` into a container only when that container is created, so anything
+written to `.env` after the app container is already running is invisible to
+it until the container is recreated.
 
 The API is then at **http://localhost:8080**.
 
@@ -144,6 +151,8 @@ docker build --target production -t user-todo-api:prod .
 CI builds this target on every pull request, so the shipping image is never an
 untested artifact.
 
+GitHub Actions (`.github/workflows/ci.yml`) brings up the full compose stack, then runs `composer install`, `vendor/bin/pint --test` and `vendor/bin/phpunit` against it on every pull request to `main`/`develop` and every push to `develop`, and separately builds the `production` target above.
+
 ## Troubleshooting
 
 **`docker compose up` fails complaining about `.env`**
@@ -174,7 +183,12 @@ Check the worker is alive with `docker compose ps` and
 have failed, and `restart: unless-stopped` should have recovered it.
 
 **500 responses immediately after setup**
-Usually a missing `APP_KEY` or `JWT_SECRET`. Re-run steps 5 and 6.
+Usually a missing `APP_KEY` or `JWT_SECRET`. Re-run steps 4 and 5, then
+recreate the containers so they pick up the new values:
+
+```bash
+docker compose up -d --force-recreate app worker
+```
 
 ## Architecture
 
