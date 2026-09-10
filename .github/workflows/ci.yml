@@ -86,7 +86,13 @@ jobs:
         run: docker compose run --rm -T -e HOME=/tmp app php artisan key:generate
 
       - name: Generate JWT secret
-        run: docker compose run --rm -T -e HOME=/tmp app php artisan jwt:secret
+        run: |
+          docker compose run --rm -T -e HOME=/tmp app php artisan jwt:secret --force
+          grep '^JWT_SECRET=' .env
+          test -n "$(grep '^JWT_SECRET=' .env | cut -d= -f2)" || {
+            echo "::error::jwt:secret did not write a value to .env"
+            exit 1
+          }
 
       - name: Start the application stack
         run: docker compose up -d --force-recreate app worker
