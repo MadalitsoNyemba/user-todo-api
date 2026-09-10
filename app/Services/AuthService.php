@@ -14,11 +14,15 @@ use Illuminate\Support\Facades\Hash;
 use Tymon\JWTAuth\Facades\JWTAuth;
 
 /**
- * Registration, credential checking and token issuance.
+ * Registration, credential checking, token issuance and invalidation.
  *
- * Takes scalars and returns an AuthResult. It never reads the request and
- * never builds a response, so it can be called from a controller, a console
- * command or a test with equal ease.
+ * Takes scalars (or an already-authenticated User) and returns an AuthResult
+ * or void. It never reads the request and never builds a response, so it can
+ * be called from a controller, a console command or a test with equal ease.
+ *
+ * Logout writes the token's jti into the JWT blacklist (Redis cache store in
+ * the running stack). Refresh issues a new token and blacklists the previous
+ * one; refresh-token rotation and sliding sessions are left for later work.
  */
 class AuthService
 {
@@ -64,11 +68,39 @@ class AuthService
         return $this->issueToken($user);
     }
 
+    /**
+     * Blacklist the current bearer token immediately.
+     *
+     * forceForever bypasses the blacklist grace period so a logged-out token
+     * cannot be reused for JWT_BLACKLIST_GRACE_PERIOD seconds. That grace
+     * window exists for concurrent refresh races, not for sign-out.
+     */
+    public function logout(): void
+    {
+        JWTAuth::parseToken()->invalidate(true);
+    }
+
+    /**
+     * Issue a new access token for the authenticated subject and blacklist
+     * the one that was presented.
+     */
+    public function refresh(User $user): AuthResult
+    {
+        $token = JWTAuth::parseToken()->refresh();
+
+        return $this->tokenResult($user, $token);
+    }
+
     private function issueToken(User $user): AuthResult
+    {
+        return $this->tokenResult($user, JWTAuth::fromUser($user));
+    }
+
+    private function tokenResult(User $user, string $token): AuthResult
     {
         return new AuthResult(
             user: $user,
-            token: JWTAuth::fromUser($user),
+            token: $token,
             expiresIn: JWTAuth::factory()->getTTL() * 60,
         );
     }

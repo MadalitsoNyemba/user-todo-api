@@ -22,5 +22,5 @@ use OpenApi\Attributes as OA;
     bearerFormat: 'JWT',
     scheme: 'bearer',
 )]
-#[OA\Tag(name: 'Auth', description: 'Registration and sign-in.')]
+#[OA\Tag(name: 'Auth', description: 'Registration, sign-in, token refresh and sign-out.')]
 final class Info {}

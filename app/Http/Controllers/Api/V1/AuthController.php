@@ -10,6 +10,7 @@ use App\Http\Requests\Api\V1\LoginRequest;
 use App\Http\Requests\Api\V1\RegisterRequest;
 use App\Http\Resources\UserResource;
 use App\Http\Responses\ApiResponse;
+use App\Models\User;
 use App\Services\AuthService;
 use Illuminate\Http\JsonResponse;
 
@@ -38,6 +39,24 @@ class AuthController extends Controller
         );
 
         return ApiResponse::success($this->payload($result), 'Signed in.');
+    }
+
+    public function logout(): JsonResponse
+    {
+        $this->auth->logout();
+
+        return ApiResponse::success(null, 'Signed out.');
+    }
+
+    public function refresh(): JsonResponse
+    {
+        /** @var User $user */
+        $user = auth()->user();
+
+        return ApiResponse::success(
+            $this->payload($this->auth->refresh($user)),
+            'Token refreshed.',
+        );
     }
 
     private function payload(AuthResult $result): array
