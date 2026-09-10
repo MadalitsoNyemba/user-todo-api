@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use App\Http\Controllers\Api\V1\AuthController;
 use App\Http\Controllers\Api\V1\ProfileController;
+use App\Http\Controllers\Api\V1\TodoController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -13,7 +14,10 @@ use Illuminate\Support\Facades\Route;
 |
 | Versioned from the start so a breaking change ships as /v2 rather than as a
 | coordinated client release. Register and login are the only public routes;
-| logout, refresh, profile, and everything else sit behind auth.jwt.
+| logout, refresh, profile, todos, and everything else sit behind auth.jwt.
+|
+| Todo {id} is a plain integer — no route model binding — so lookups go through
+| findForUser and another user’s todo is indistinguishable from a missing one.
 |
 */
 
@@ -32,5 +36,11 @@ Route::prefix('v1')->name('api.v1.')->group(function (): void {
         Route::get('me', [ProfileController::class, 'show'])->name('me.show');
         Route::patch('me', [ProfileController::class, 'update'])->name('me.update');
         Route::delete('me', [ProfileController::class, 'destroy'])->name('me.destroy');
+
+        Route::get('todos', [TodoController::class, 'index'])->name('todos.index');
+        Route::post('todos', [TodoController::class, 'store'])->name('todos.store');
+        Route::get('todos/{id}', [TodoController::class, 'show'])->whereNumber('id')->name('todos.show');
+        Route::patch('todos/{id}', [TodoController::class, 'update'])->whereNumber('id')->name('todos.update');
+        Route::delete('todos/{id}', [TodoController::class, 'destroy'])->whereNumber('id')->name('todos.destroy');
     });
 });

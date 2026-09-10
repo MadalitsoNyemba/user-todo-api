@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Repositories\Contracts;
 
+use App\Enums\TodoPriority;
 use App\Models\Todo;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 
@@ -13,7 +14,18 @@ use Illuminate\Contracts\Pagination\LengthAwarePaginator;
  */
 interface TodoRepositoryInterface
 {
-    public function paginateForUser(int $userId, int $perPage = 15): LengthAwarePaginator;
+    /**
+     * @param  'due_date'|'created_at'  $sort
+     * @param  'asc'|'desc'  $order
+     */
+    public function paginateForUser(
+        int $userId,
+        int $perPage = 15,
+        ?bool $isCompleted = null,
+        ?TodoPriority $priority = null,
+        string $sort = 'created_at',
+        string $order = 'desc',
+    ): LengthAwarePaginator;
 
     public function findForUser(int $userId, int $todoId): ?Todo;
 

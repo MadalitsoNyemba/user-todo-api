@@ -4,17 +4,37 @@ declare(strict_types=1);
 
 namespace App\Repositories\Eloquent;
 
+use App\Enums\TodoPriority;
 use App\Models\Todo;
 use App\Repositories\Contracts\TodoRepositoryInterface;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 
 class EloquentTodoRepository implements TodoRepositoryInterface
 {
-    public function paginateForUser(int $userId, int $perPage = 15): LengthAwarePaginator
-    {
-        return Todo::query()
-            ->where('user_id', $userId)
-            ->latest('id')
+    public function paginateForUser(
+        int $userId,
+        int $perPage = 15,
+        ?bool $isCompleted = null,
+        ?TodoPriority $priority = null,
+        string $sort = 'created_at',
+        string $order = 'desc',
+    ): LengthAwarePaginator {
+        $query = Todo::query()->where('user_id', $userId);
+
+        if ($isCompleted !== null) {
+            $query->where('is_completed', $isCompleted);
+        }
+
+        if ($priority !== null) {
+            $query->where('priority', $priority->value);
+        }
+
+        $direction = strtolower($order) === 'asc' ? 'asc' : 'desc';
+        $column = $sort === 'due_date' ? 'due_date' : 'created_at';
+
+        return $query
+            ->orderBy($column, $direction)
+            ->orderBy('id', $direction)
             ->paginate($perPage);
     }
 

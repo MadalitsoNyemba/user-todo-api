@@ -194,6 +194,9 @@ docker compose up -d --force-recreate app worker
 
 _Added as the layers land. See `CONTRIBUTING.md` for the layering rules._
 
+Todos belonging to another user return **404**, not 403 — a forbidden response
+would confirm the record exists and allow id enumeration.
+
 ## API reference
 
 Interactive OpenAPI documentation (Swagger UI) is at
