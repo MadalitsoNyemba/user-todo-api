@@ -9,6 +9,7 @@ use Illuminate\Auth\AuthenticationException;
 use Illuminate\Contracts\Auth\Factory as AuthFactory;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\Response;
+use Tymon\JWTAuth\Exceptions\TokenInvalidException;
 use Tymon\JWTAuth\Facades\JWTAuth;
 
 /**
@@ -23,6 +24,10 @@ use Tymon\JWTAuth\Facades\JWTAuth;
  *
  * The resolved user is pushed into the `api` guard so a later auth()->user()
  * reuses it instead of the guard re-parsing and re-verifying the token itself.
+ *
+ * Tokens also carry a `ver` claim matched to users.token_version. Password or
+ * email changes bump that column so every prior access token stops working,
+ * not only the jti that performed the change.
  */
 class AuthenticateWithJwt
 {
@@ -36,6 +41,12 @@ class AuthenticateWithJwt
 
         if (! $user) {
             throw new AuthenticationException;
+        }
+
+        $tokenVersion = (int) JWTAuth::payload()->get('ver');
+
+        if ($tokenVersion !== (int) $user->token_version) {
+            throw new TokenInvalidException('Token is invalid');
         }
 
         $this->auth->guard('api')->setUser($user);

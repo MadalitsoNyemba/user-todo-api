@@ -28,6 +28,7 @@ class User extends Authenticatable implements JWTSubject
     protected $casts = [
         'email_verified_at' => 'datetime',
         'password' => 'hashed',
+        'token_version' => 'integer',
     ];
 
     /**
@@ -39,11 +40,15 @@ class User extends Authenticatable implements JWTSubject
     }
 
     /**
-     * Nothing beyond the standard claims. Anything added here is readable by
-     * anyone holding the token, since a JWT payload is signed but not encrypted.
+     * `ver` is checked by AuthenticateWithJwt against users.token_version.
+     * Bumping the column invalidates every outstanding access token for the
+     * user (password/email change) without enumerating jtis. The claim is
+     * not sensitive — it is an integer counter, not a secret.
      */
     public function getJWTCustomClaims(): array
     {
-        return [];
+        return [
+            'ver' => $this->token_version,
+        ];
     }
 }

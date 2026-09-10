@@ -23,4 +23,5 @@ use OpenApi\Attributes as OA;
     scheme: 'bearer',
 )]
 #[OA\Tag(name: 'Auth', description: 'Registration, sign-in, token refresh and sign-out.')]
+#[OA\Tag(name: 'Profile', description: 'The authenticated user’s own account. No user index — listing others is admin-only.')]
 final class Info {}
