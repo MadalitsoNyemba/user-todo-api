@@ -137,4 +137,78 @@ final class AuthEndpoints
         ],
     )]
     public function login(): void {}
+
+    #[OA\Post(
+        path: '/api/v1/auth/logout',
+        operationId: 'authLogout',
+        description: 'Blacklists the current JWT. The same bearer token cannot authenticate again afterwards.',
+        summary: 'Sign out',
+        security: [['bearerAuth' => []]],
+        tags: ['Auth'],
+        responses: [
+            new OA\Response(
+                response: 200,
+                description: 'Signed out.',
+                content: new OA\JsonContent(
+                    required: ['success', 'message', 'data', 'errors', 'meta'],
+                    properties: [
+                        new OA\Property(property: 'success', type: 'boolean', example: true),
+                        new OA\Property(property: 'message', type: 'string', example: 'Signed out.'),
+                        new OA\Property(property: 'data', nullable: true, example: null),
+                        new OA\Property(property: 'errors', nullable: true, example: null),
+                        new OA\Property(property: 'meta', nullable: true, example: null),
+                    ],
+                    type: 'object',
+                ),
+            ),
+            new OA\Response(
+                response: 401,
+                description: 'Missing, invalid, expired or already blacklisted token.',
+                content: new OA\JsonContent(ref: '#/components/schemas/ErrorEnvelope'),
+            ),
+        ],
+    )]
+    public function logout(): void {}
+
+    #[OA\Post(
+        path: '/api/v1/auth/refresh',
+        operationId: 'authRefresh',
+        description: 'Issues a new JWT and blacklists the one that was presented. The access token must still be valid (not expired).',
+        summary: 'Refresh access token',
+        security: [['bearerAuth' => []]],
+        tags: ['Auth'],
+        responses: [
+            new OA\Response(
+                response: 200,
+                description: 'Token refreshed.',
+                content: new OA\JsonContent(
+                    required: ['success', 'message', 'data', 'errors', 'meta'],
+                    properties: [
+                        new OA\Property(property: 'success', type: 'boolean', example: true),
+                        new OA\Property(property: 'message', type: 'string', example: 'Token refreshed.'),
+                        new OA\Property(
+                            property: 'data',
+                            required: ['user', 'token', 'token_type', 'expires_in'],
+                            properties: [
+                                new OA\Property(property: 'user', ref: '#/components/schemas/User'),
+                                new OA\Property(property: 'token', type: 'string'),
+                                new OA\Property(property: 'token_type', type: 'string', example: 'bearer'),
+                                new OA\Property(property: 'expires_in', type: 'integer', example: 3600),
+                            ],
+                            type: 'object',
+                        ),
+                        new OA\Property(property: 'errors', nullable: true, example: null),
+                        new OA\Property(property: 'meta', nullable: true, example: null),
+                    ],
+                    type: 'object',
+                ),
+            ),
+            new OA\Response(
+                response: 401,
+                description: 'Missing, invalid, expired or blacklisted token.',
+                content: new OA\JsonContent(ref: '#/components/schemas/ErrorEnvelope'),
+            ),
+        ],
+    )]
+    public function refresh(): void {}
 }

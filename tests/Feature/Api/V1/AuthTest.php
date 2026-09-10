@@ -211,4 +211,80 @@ class AuthTest extends TestCase
 
         $this->assertSame(1, User::where('email', 'alice@example.com')->count());
     }
+
+    public function test_logout_blacklists_the_current_token(): void
+    {
+        $token = $this->bearerTokenFor('alice@example.com');
+
+        $logout = $this->withHeader('Authorization', "Bearer {$token}")
+            ->postJson('/api/v1/auth/logout');
+
+        $logout->assertOk();
+        $logout->assertJsonPath('success', true);
+        $logout->assertJsonPath('message', 'Signed out.');
+        $logout->assertJsonPath('data', null);
+
+        $reuse = $this->withHeader('Authorization', "Bearer {$token}")
+            ->getJson('/api/v1/_auth-probe');
+
+        $reuse->assertStatus(401);
+        $reuse->assertJsonPath('success', false);
+    }
+
+    public function test_refresh_returns_a_working_token(): void
+    {
+        $token = $this->bearerTokenFor('alice@example.com');
+
+        $refresh = $this->withHeader('Authorization', "Bearer {$token}")
+            ->postJson('/api/v1/auth/refresh');
+
+        $refresh->assertOk();
+        $refresh->assertJsonPath('success', true);
+        $refresh->assertJsonPath('message', 'Token refreshed.');
+        $refresh->assertJsonPath('data.token_type', 'bearer');
+        $refresh->assertJsonStructure(['data' => ['token', 'expires_in', 'user' => ['id', 'name', 'email']]]);
+
+        $newToken = $refresh->json('data.token');
+        $this->assertIsString($newToken);
+        $this->assertNotSame($token, $newToken);
+
+        $probe = $this->withHeader('Authorization', "Bearer {$newToken}")
+            ->getJson('/api/v1/_auth-probe');
+
+        $probe->assertOk();
+    }
+
+    public function test_logout_rejects_unauthenticated_requests(): void
+    {
+        $response = $this->postJson('/api/v1/auth/logout');
+
+        $response->assertStatus(401);
+        $response->assertJsonPath('success', false);
+    }
+
+    public function test_refresh_rejects_unauthenticated_requests(): void
+    {
+        $response = $this->postJson('/api/v1/auth/refresh');
+
+        $response->assertStatus(401);
+        $response->assertJsonPath('success', false);
+    }
+
+    private function bearerTokenFor(string $email): string
+    {
+        User::factory()->create([
+            'email' => $email,
+            'password' => 'correct-horse-battery',
+        ]);
+
+        $token = $this->postJson('/api/v1/auth/login', [
+            'email' => $email,
+            'password' => 'correct-horse-battery',
+        ])->json('data.token');
+
+        $this->assertIsString($token);
+        $this->assertNotEmpty($token);
+
+        return $token;
+    }
 }

@@ -257,6 +257,159 @@
                     }
                 }
             }
+        },
+        "/api/v1/auth/logout": {
+            "post": {
+                "tags": [
+                    "Auth"
+                ],
+                "summary": "Sign out",
+                "description": "Blacklists the current JWT (stored in the Redis-backed cache). The same bearer token cannot authenticate again afterwards.",
+                "operationId": "authLogout",
+                "responses": {
+                    "200": {
+                        "description": "Signed out.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "required": [
+                                        "success",
+                                        "message",
+                                        "data",
+                                        "errors",
+                                        "meta"
+                                    ],
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": true
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Signed out."
+                                        },
+                                        "data": {
+                                            "example": null,
+                                            "nullable": true
+                                        },
+                                        "errors": {
+                                            "example": null,
+                                            "nullable": true
+                                        },
+                                        "meta": {
+                                            "example": null,
+                                            "nullable": true
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Missing, invalid, expired or already blacklisted token.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorEnvelope"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/api/v1/auth/refresh": {
+            "post": {
+                "tags": [
+                    "Auth"
+                ],
+                "summary": "Refresh access token",
+                "description": "Issues a new JWT and blacklists the one that was presented. The access token must still be valid (not expired).",
+                "operationId": "authRefresh",
+                "responses": {
+                    "200": {
+                        "description": "Token refreshed.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "required": [
+                                        "success",
+                                        "message",
+                                        "data",
+                                        "errors",
+                                        "meta"
+                                    ],
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": true
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Token refreshed."
+                                        },
+                                        "data": {
+                                            "required": [
+                                                "user",
+                                                "token",
+                                                "token_type",
+                                                "expires_in"
+                                            ],
+                                            "properties": {
+                                                "user": {
+                                                    "$ref": "#/components/schemas/User"
+                                                },
+                                                "token": {
+                                                    "type": "string"
+                                                },
+                                                "token_type": {
+                                                    "type": "string",
+                                                    "example": "bearer"
+                                                },
+                                                "expires_in": {
+                                                    "type": "integer",
+                                                    "example": 3600
+                                                }
+                                            },
+                                            "type": "object"
+                                        },
+                                        "errors": {
+                                            "example": null,
+                                            "nullable": true
+                                        },
+                                        "meta": {
+                                            "example": null,
+                                            "nullable": true
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Missing, invalid, expired or blacklisted token.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorEnvelope"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
         }
     },
     "components": {
@@ -422,7 +575,7 @@
     "tags": [
         {
             "name": "Auth",
-            "description": "Registration and sign-in."
+            "description": "Registration, sign-in, token refresh and sign-out."
         }
     ]
 }

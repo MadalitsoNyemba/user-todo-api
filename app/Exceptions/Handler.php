@@ -56,7 +56,8 @@ class Handler extends ExceptionHandler
                 : null;
         });
 
-        // Also covers a missing or unparseable token, and a blacklisted one.
+        // Also covers a missing or unparseable token. Blacklisted tokens raise
+        // TokenBlacklistedException, which extends TokenInvalidException above.
         $this->renderable(function (JWTException $e, Request $request) {
             return $this->shouldRenderJson($request)
                 ? ApiResponse::error('Token not provided or could not be parsed.', Response::HTTP_UNAUTHORIZED)
