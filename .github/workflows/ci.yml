@@ -89,7 +89,18 @@ jobs:
         run: docker compose run --rm -T -e HOME=/tmp app php artisan jwt:secret
 
       - name: Start the application stack
-        run: docker compose up -d
+        run: docker compose up -d --force-recreate app worker
+      
+      - name: Debug the jwt secret
+        run: |
+          echo "--- .env ---"
+          grep '^JWT_SECRET=' .env || echo "JWT_SECRET absent from .env"
+          echo "--- container env ---"
+          docker compose exec -T app printenv JWT_SECRET || echo "JWT_SECRET absent from container env"
+          echo "--- phpunit.xml ---"
+          grep 'JWT_SECRET' phpunit.xml || echo "JWT_SECRET absent from phpunit.xml"
+          echo "--- resolved config under the testing env ---"
+          docker compose exec -T -e HOME=/tmp app php artisan tinker --execute="echo config('jwt.secret') ?: 'EMPTY';"
 
       - name: Run migrations
         run: docker compose exec -T -e HOME=/tmp app php artisan migrate
