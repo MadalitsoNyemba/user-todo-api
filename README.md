@@ -196,8 +196,18 @@ _Added as the layers land. See `CONTRIBUTING.md` for the layering rules._
 
 ## API reference
 
-_Added with the endpoints. Interactive documentation will be available at
-`/api/documentation`._
+Interactive OpenAPI documentation (Swagger UI) is at
+**[/api/documentation](http://localhost:8080/api/documentation)**.
+
+The committed spec lives in `storage/api-docs/api-docs.json` and can be
+imported into Postman or Insomnia. Regenerate after annotation changes with:
+
+```bash
+docker compose exec -T -e HOME=/tmp app php artisan l5-swagger:generate
+```
+
+Locally, `L5_SWAGGER_GENERATE_ALWAYS=true` (see `.env.example`) regenerates on
+each docs request. Production should generate once at deploy time instead.
 
 ## AI usage
 

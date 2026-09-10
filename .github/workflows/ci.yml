@@ -104,6 +104,13 @@ jobs:
       - name: Check code style
         run: docker compose exec -T -e HOME=/tmp app vendor/bin/pint --test
 
+      # Generate the OpenAPI spec, then fail if the committed copy drifted.
+      # A stale committed spec looks authoritative and is worse than none.
+      - name: Generate OpenAPI docs and verify committed spec
+        run: |
+          docker compose exec -T -e HOME=/tmp app php artisan l5-swagger:generate
+          git diff --exit-code storage/api-docs/
+
       - name: Run test suite
         run: docker compose exec -T -e HOME=/tmp app vendor/bin/phpunit
 
