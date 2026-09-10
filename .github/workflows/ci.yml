@@ -36,14 +36,21 @@ jobs:
           docker buildx bake \
             --file docker-compose.yml \
             app \
+            --set "app.args.UID=$(id -u)" \
+            --set "app.args.GID=$(id -g)" \
             --set "*.cache-from=type=gha" \
             --set "*.cache-to=type=gha,mode=max" \
             --load
 
       - name: Verify the image user matches the runner
         run: |
-          echo "container uid: $(docker compose run --rm -T app id -u)"
-          echo "runner uid:    $(id -u)"
+          container_uid="$(docker compose run --rm -T app id -u)"
+          container_gid="$(docker compose run --rm -T app id -g)"
+          if [ "$container_uid" != "$(id -u)" ] || [ "$container_gid" != "$(id -g)" ]; then
+            echo "::error::Image built for uid ${container_uid}:gid ${container_gid}, runner is $(id -u):$(id -g). Build args did not apply."
+            exit 1
+          fi
+          echo "uid ${container_uid} matches"
 
       - name: Start db and redis
         run: docker compose up -d db redis
