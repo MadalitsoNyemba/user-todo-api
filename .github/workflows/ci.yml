@@ -14,14 +14,22 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      # HOST_UID and HOST_GID must be written before the image is built, not
+      # before it is run: the Dockerfile remaps www-data at build time via ARG.
+      # A runner's checkout is owned by uid 1001, not the 1000 the image
+      # defaults to, so without this the container cannot create vendor/ in the
+      # bind-mounted working directory.
       - name: Configuration
-        run: cp .env.example .env
+        run: |
+          cp .env.example .env
+          printf 'HOST_UID=%s\nHOST_GID=%s\n' "$(id -u)" "$(id -g)" >> .env
+          echo "Runner uid:gid is $(id -u):$(id -g)"
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
       # Builds only the `app` service. `worker` shares the same context, target
-      # and image tag (user-todo-api:dev), so once it's loaded into the local
+      # and image tag (user-todo-api:dev), so once it is loaded into the local
       # image store `docker compose up` reuses it instead of rebuilding.
       - name: Build application image (GitHub Actions layer cache)
         run: |
@@ -31,6 +39,11 @@ jobs:
             --set "*.cache-from=type=gha" \
             --set "*.cache-to=type=gha,mode=max" \
             --load
+
+      - name: Verify the image user matches the runner
+        run: |
+          echo "container uid: $(docker compose run --rm -T app id -u)"
+          echo "runner uid:    $(id -u)"
 
       - name: Start db and redis
         run: docker compose up -d db redis
@@ -55,10 +68,10 @@ jobs:
           echo "db and redis are healthy"
 
       # composer install, then key:generate and jwt:secret, all via `run --rm`
-      # so they complete and write to .env *before* `up -d` creates the app
-      # and worker containers. env_file bakes values in at container creation,
-      # so anything generated afterwards via `exec` into an already-running
-      # container is invisible to that container until it's recreated.
+      # so they complete and write to .env *before* `up -d` creates the app and
+      # worker containers. env_file bakes values in at container creation, so
+      # anything generated afterwards by exec'ing into an already-running
+      # container is invisible to that container until it is recreated.
       - name: Install Composer dependencies
         run: docker compose run --rm -T app composer install
 
