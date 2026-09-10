@@ -264,7 +264,7 @@
                     "Auth"
                 ],
                 "summary": "Sign out",
-                "description": "Blacklists the current JWT (stored in the Redis-backed cache). The same bearer token cannot authenticate again afterwards.",
+                "description": "Blacklists the current JWT. The same bearer token cannot authenticate again afterwards.",
                 "operationId": "authLogout",
                 "responses": {
                     "200": {
