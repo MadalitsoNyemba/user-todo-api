@@ -2,10 +2,6 @@
 
 A dockerised RESTful API managing users and a per-user todo list. Layered Laravel 10 application (controllers to services to repositories) behind JWT authentication, with asynchronous work offloaded to Redis-backed queues.
 
-> **Build status:** this README describes the finished stack. Steps marked
-> _(pending)_ depend on work not yet merged and can be skipped until then.
-> This note is removed before submission.
-
 ## Requirements
 
 - Docker Engine 24+ with Compose v2 (`docker compose`, not `docker-compose`)
@@ -30,7 +26,7 @@ docker compose run --rm app composer install
 # 4. Application key
 docker compose run --rm app php artisan key:generate
 
-# 5. JWT signing secret                                          (pending)
+# 5. JWT signing secret
 docker compose run --rm app php artisan jwt:secret
 
 # 6. Start the stack
@@ -41,7 +37,7 @@ docker compose ps
 
 # 8. Schema and demo data
 docker compose exec app php artisan migrate
-docker compose exec app php artisan db:seed                    # (pending)
+docker compose exec app php artisan db:seed
 ```
 
 Dependencies and the application key/JWT secret are generated with
@@ -56,7 +52,7 @@ Migrations are deliberately not run from the container entrypoint. Automatic
 migration on boot races itself the moment the app runs more than one replica,
 so it stays an explicit step here.
 
-### Seeded accounts _(pending)_
+### Seeded accounts
 
 | email | password | role |
 |---|---|---|
@@ -196,10 +192,19 @@ docker compose up -d --force-recreate app worker
 
 ## Architecture
 
-_Added as the layers land. See `CONTRIBUTING.md` for the layering rules._
+Controllers stay thin: Form Requests validate, Services hold business rules,
+Repositories own persistence. See `CONTRIBUTING.md` for the layering rules.
 
 Todos belonging to another user return **404**, not 403 — a forbidden response
 would confirm the record exists and allow id enumeration.
+
+Public auth (`register` / `login`) is limited to **5 requests per minute** keyed
+on email plus IP. Authenticated routes are limited to **60 requests per minute**
+per user. Exceeding either returns the standard error envelope with a
+`Retry-After` header.
+
+There is no browser UI. HTTP entry points are the versioned JSON API under
+`/api/v1` and OpenAPI at `/api/documentation`.
 
 ## API reference
 

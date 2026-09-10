@@ -66,6 +66,18 @@ final class AuthEndpoints
                 description: 'Validation failed (including duplicate email).',
                 content: new OA\JsonContent(ref: '#/components/schemas/ErrorEnvelope'),
             ),
+            new OA\Response(
+                response: 429,
+                description: 'Too many attempts for this email and IP within one minute. Includes a Retry-After header.',
+                headers: [
+                    new OA\Header(
+                        header: 'Retry-After',
+                        description: 'Seconds until another attempt is allowed.',
+                        schema: new OA\Schema(type: 'integer', example: 60),
+                    ),
+                ],
+                content: new OA\JsonContent(ref: '#/components/schemas/ErrorEnvelope'),
+            ),
         ],
     )]
     public function register(): void {}
@@ -132,6 +144,18 @@ final class AuthEndpoints
             new OA\Response(
                 response: 422,
                 description: 'Validation failed.',
+                content: new OA\JsonContent(ref: '#/components/schemas/ErrorEnvelope'),
+            ),
+            new OA\Response(
+                response: 429,
+                description: 'Too many attempts for this email and IP within one minute. Includes a Retry-After header.',
+                headers: [
+                    new OA\Header(
+                        header: 'Retry-After',
+                        description: 'Seconds until another attempt is allowed.',
+                        schema: new OA\Schema(type: 'integer', example: 60),
+                    ),
+                ],
                 content: new OA\JsonContent(ref: '#/components/schemas/ErrorEnvelope'),
             ),
         ],

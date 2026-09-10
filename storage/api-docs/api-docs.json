@@ -126,6 +126,25 @@
                                 }
                             }
                         }
+                    },
+                    "429": {
+                        "description": "Too many attempts for this email and IP within one minute. Includes a Retry-After header.",
+                        "headers": {
+                            "Retry-After": {
+                                "description": "Seconds until another attempt is allowed.",
+                                "schema": {
+                                    "type": "integer",
+                                    "example": 60
+                                }
+                            }
+                        },
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorEnvelope"
+                                }
+                            }
+                        }
                     }
                 }
             }
@@ -247,6 +266,25 @@
                     },
                     "422": {
                         "description": "Validation failed.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorEnvelope"
+                                }
+                            }
+                        }
+                    },
+                    "429": {
+                        "description": "Too many attempts for this email and IP within one minute. Includes a Retry-After header.",
+                        "headers": {
+                            "Retry-After": {
+                                "description": "Seconds until another attempt is allowed.",
+                                "schema": {
+                                    "type": "integer",
+                                    "example": 60
+                                }
+                            }
+                        },
                         "content": {
                             "application/json": {
                                 "schema": {

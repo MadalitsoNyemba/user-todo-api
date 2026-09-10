@@ -65,7 +65,9 @@ class Kernel extends HttpKernel
 
         'api' => [
             ForceJsonResponse::class,
-            ThrottleRequests::class.':api',
+            // Throttles are named limiters applied on the route groups in
+            // routes/api.php (throttle:auth on public auth, throttle:api on
+            // authenticated routes) so each group can use the right key.
             SubstituteBindings::class,
         ],
     ];

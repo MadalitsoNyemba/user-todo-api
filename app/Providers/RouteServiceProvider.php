@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Providers;
 
 use Illuminate\Cache\RateLimiting\Limit;
@@ -24,9 +26,7 @@ class RouteServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
-        RateLimiter::for('api', function (Request $request) {
-            return Limit::perMinute(60)->by($request->user()?->id ?: $request->ip());
-        });
+        $this->configureRateLimiting();
 
         $this->routes(function () {
             Route::middleware('api')
@@ -35,6 +35,27 @@ class RouteServiceProvider extends ServiceProvider
 
             Route::middleware('web')
                 ->group(base_path('routes/web.php'));
+        });
+    }
+
+    /**
+     * Named limiters attached in routes/api.php. Auth keys on email plus IP so
+     * a shared NAT is not locked out as a whole and a known address cannot be
+     * locked out from an arbitrary IP alone. The general API limiter keys on
+     * the authenticated user.
+     */
+    protected function configureRateLimiting(): void
+    {
+        RateLimiter::for('auth', function (Request $request) {
+            $email = strtolower((string) $request->input('email', ''));
+
+            return Limit::perMinute(5)->by($email.'|'.$request->ip());
+        });
+
+        RateLimiter::for('api', function (Request $request) {
+            return Limit::perMinute(60)->by(
+                (string) ($request->user()?->getAuthIdentifier() ?: $request->ip()),
+            );
         });
     }
 }
