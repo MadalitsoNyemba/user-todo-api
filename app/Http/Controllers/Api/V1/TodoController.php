@@ -6,6 +6,7 @@ namespace App\Http\Controllers\Api\V1;
 
 use App\Enums\TodoPriority;
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Api\V1\BulkCompleteTodosRequest;
 use App\Http\Requests\Api\V1\IndexTodoRequest;
 use App\Http\Requests\Api\V1\StoreTodoRequest;
 use App\Http\Requests\Api\V1\UpdateTodoRequest;
@@ -85,5 +86,22 @@ class TodoController extends Controller
         $this->todos->delete($user->id, $id);
 
         return ApiResponse::success(null, 'Todo deleted.');
+    }
+
+    public function bulkComplete(BulkCompleteTodosRequest $request): JsonResponse
+    {
+        /** @var User $user */
+        $user = auth()->user();
+
+        /** @var list<int> $ids */
+        $ids = array_map('intval', $request->validated('ids'));
+
+        $status = $this->todos->bulkComplete($user->id, $ids);
+
+        return ApiResponse::accepted([
+            'job_id' => $status->uuid,
+            'status' => $status->status->value,
+            'status_url' => route('api.v1.jobs.show', ['uuid' => $status->uuid]),
+        ]);
     }
 }

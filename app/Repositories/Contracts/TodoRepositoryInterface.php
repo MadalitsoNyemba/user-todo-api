@@ -48,4 +48,19 @@ interface TodoRepositoryInterface
      * @return int Number of rows updated
      */
     public function completeManyForUser(int $userId, array $todoIds): int;
+
+    /**
+     * Ids from the given set that belong to the user (ownership re-check).
+     *
+     * @param  list<int>  $todoIds
+     * @return list<int>
+     */
+    public function ownedIdsAmong(int $userId, array $todoIds): array;
+
+    /**
+     * How many of the given owned ids are currently completed.
+     *
+     * @param  list<int>  $todoIds
+     */
+    public function countCompletedAmong(int $userId, array $todoIds): int;
 }

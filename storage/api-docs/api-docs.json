@@ -977,6 +977,111 @@
                 ]
             }
         },
+        "/api/v1/todos/bulk-complete": {
+            "post": {
+                "tags": [
+                    "Todos"
+                ],
+                "summary": "Bulk-complete todos",
+                "description": "Accepts up to 500 todo ids for async completion on the redis queue. Returns 202 with a job_id to poll at status_url. Foreign ids are skipped; already-completed todos are left alone so retries are idempotent.",
+                "operationId": "todosBulkComplete",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "required": [
+                                    "ids"
+                                ],
+                                "properties": {
+                                    "ids": {
+                                        "type": "array",
+                                        "items": {
+                                            "type": "integer"
+                                        },
+                                        "maxItems": 500,
+                                        "minItems": 1
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "202": {
+                        "description": "Accepted for processing.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": true
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Accepted for processing."
+                                        },
+                                        "data": {
+                                            "properties": {
+                                                "job_id": {
+                                                    "type": "string",
+                                                    "format": "uuid"
+                                                },
+                                                "status": {
+                                                    "type": "string",
+                                                    "example": "queued"
+                                                },
+                                                "status_url": {
+                                                    "type": "string",
+                                                    "format": "uri"
+                                                }
+                                            },
+                                            "type": "object"
+                                        },
+                                        "errors": {
+                                            "example": null,
+                                            "nullable": true
+                                        },
+                                        "meta": {
+                                            "example": null,
+                                            "nullable": true
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthenticated.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorEnvelope"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation failed.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorEnvelope"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
         "/api/v1/todos/{id}": {
             "get": {
                 "tags": [
