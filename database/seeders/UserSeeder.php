@@ -9,12 +9,6 @@ use Illuminate\Database\Seeder;
 
 class UserSeeder extends Seeder
 {
-    /**
-     * Two fixed accounts so a reviewer can log in immediately, and so the
-     * ownership tests later have a second user to be denied as.
-     *
-     * firstOrCreate keeps this safe to re-run against an existing database.
-     */
     public function run(): void
     {
         User::firstOrCreate(
