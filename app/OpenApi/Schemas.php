@@ -7,10 +7,9 @@ namespace App\OpenApi;
 use OpenApi\Attributes as OA;
 
 /**
- * Shared response and resource shapes. Mirrors ApiResponse and UserResource.
+ * Shared response and resource shapes. Mirrors ApiResponse and resources.
  *
- * Todo and JobStatus schemas are intentionally absent — those models land in
- * later issues; documenting a shape that does not exist yet would mislead.
+ * JobStatus is intentionally absent until that model lands.
  */
 #[OA\Schema(
     schema: 'SuccessEnvelope',
@@ -101,6 +100,23 @@ use OpenApi\Attributes as OA;
             format: 'date-time',
             example: '2026-09-10T19:00:00+00:00',
         ),
+    ],
+    type: 'object',
+)]
+#[OA\Schema(
+    schema: 'Todo',
+    description: 'TodoResource. user_id is never exposed. Cross-tenant access returns 404, not 403.',
+    required: ['id', 'title', 'description', 'is_completed', 'completed_at', 'due_date', 'priority', 'created_at', 'updated_at'],
+    properties: [
+        new OA\Property(property: 'id', type: 'integer', example: 1),
+        new OA\Property(property: 'title', type: 'string', example: 'Ship profile endpoints'),
+        new OA\Property(property: 'description', type: 'string', nullable: true, example: 'Keep controllers thin.'),
+        new OA\Property(property: 'is_completed', type: 'boolean', example: false),
+        new OA\Property(property: 'completed_at', type: 'string', format: 'date-time', nullable: true),
+        new OA\Property(property: 'due_date', type: 'string', format: 'date', nullable: true, example: '2030-01-15'),
+        new OA\Property(property: 'priority', type: 'string', nullable: true, enum: ['low', 'medium', 'high'], example: 'high'),
+        new OA\Property(property: 'created_at', type: 'string', format: 'date-time'),
+        new OA\Property(property: 'updated_at', type: 'string', format: 'date-time'),
     ],
     type: 'object',
 )]
