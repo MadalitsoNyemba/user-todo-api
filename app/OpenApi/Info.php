@@ -25,4 +25,5 @@ use OpenApi\Attributes as OA;
 #[OA\Tag(name: 'Auth', description: 'Registration, sign-in, token refresh and sign-out.')]
 #[OA\Tag(name: 'Profile', description: 'The authenticated user’s own account. No user index — listing others is admin-only.')]
 #[OA\Tag(name: 'Todos', description: 'Per-user todos. Cross-tenant access returns 404, not 403.')]
+#[OA\Tag(name: 'Jobs', description: 'Poll async job status. UUIDs are scoped to the caller.')]
 final class Info {}

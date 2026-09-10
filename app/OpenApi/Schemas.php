@@ -8,8 +8,6 @@ use OpenApi\Attributes as OA;
 
 /**
  * Shared response and resource shapes. Mirrors ApiResponse and resources.
- *
- * JobStatus is intentionally absent until that model lands.
  */
 #[OA\Schema(
     schema: 'SuccessEnvelope',
@@ -115,6 +113,24 @@ use OpenApi\Attributes as OA;
         new OA\Property(property: 'completed_at', type: 'string', format: 'date-time', nullable: true),
         new OA\Property(property: 'due_date', type: 'string', format: 'date', nullable: true, example: '2030-01-15'),
         new OA\Property(property: 'priority', type: 'string', nullable: true, enum: ['low', 'medium', 'high'], example: 'high'),
+        new OA\Property(property: 'created_at', type: 'string', format: 'date-time'),
+        new OA\Property(property: 'updated_at', type: 'string', format: 'date-time'),
+    ],
+    type: 'object',
+)]
+#[OA\Schema(
+    schema: 'JobStatus',
+    description: 'JobStatusResource. Polled after an async write. user_id and internal id are never exposed; UUIDs are not enumerable across tenants.',
+    required: ['uuid', 'type', 'status', 'total', 'processed', 'failed_count', 'result', 'error', 'created_at', 'updated_at'],
+    properties: [
+        new OA\Property(property: 'uuid', type: 'string', format: 'uuid'),
+        new OA\Property(property: 'type', type: 'string', example: 'bulk_complete_todos'),
+        new OA\Property(property: 'status', type: 'string', enum: ['queued', 'processing', 'completed', 'failed']),
+        new OA\Property(property: 'total', type: 'integer', example: 10),
+        new OA\Property(property: 'processed', type: 'integer', example: 4),
+        new OA\Property(property: 'failed_count', type: 'integer', example: 0),
+        new OA\Property(property: 'result', type: 'object', nullable: true),
+        new OA\Property(property: 'error', type: 'string', nullable: true),
         new OA\Property(property: 'created_at', type: 'string', format: 'date-time'),
         new OA\Property(property: 'updated_at', type: 'string', format: 'date-time'),
     ],
