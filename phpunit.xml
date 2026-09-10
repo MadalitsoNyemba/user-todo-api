@@ -18,15 +18,17 @@
         </include>
     </source>
     <php>
-        <env name="APP_ENV" value="testing"/>
-        <env name="BCRYPT_ROUNDS" value="4"/>
-        <env name="CACHE_DRIVER" value="array"/>
-        <env name="DB_DATABASE" value="user_todo_api_testing"/>
-        <env name="MAIL_MAILER" value="array"/>
-        <env name="PULSE_ENABLED" value="false"/>
-        <env name="QUEUE_CONNECTION" value="sync"/>
-        <env name="SESSION_DRIVER" value="array"/>
-        <env name="TELESCOPE_ENABLED" value="false"/>
-        <env name="JWT_SECRET" value="testing-secret-not-used-anywhere-else"/>
+        <env name="APP_ENV" value="testing" force="true"/>
+        <env name="BCRYPT_ROUNDS" value="4" force="true"/>
+        <!-- force: .env sets redis for the stack; tests must not share rate-limit
+             or JWT-blacklist keys with the running app or across suite runs. -->
+        <env name="CACHE_DRIVER" value="array" force="true"/>
+        <env name="DB_DATABASE" value="user_todo_api_testing" force="true"/>
+        <env name="MAIL_MAILER" value="array" force="true"/>
+        <env name="PULSE_ENABLED" value="false" force="true"/>
+        <env name="QUEUE_CONNECTION" value="sync" force="true"/>
+        <env name="SESSION_DRIVER" value="array" force="true"/>
+        <env name="TELESCOPE_ENABLED" value="false" force="true"/>
+        <env name="JWT_SECRET" value="testing-secret-not-used-anywhere-else" force="true"/>
     </php>
 </phpunit>
