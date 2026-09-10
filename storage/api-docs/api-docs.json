@@ -411,6 +411,85 @@
                 ]
             }
         },
+        "/api/v1/jobs/{uuid}": {
+            "get": {
+                "tags": [
+                    "Jobs"
+                ],
+                "summary": "Get job status",
+                "description": "Returns status and progress for an async job owned by the caller. Another user’s uuid yields 404, not 403.",
+                "operationId": "jobsShow",
+                "parameters": [
+                    {
+                        "name": "uuid",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Job status.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": true
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "OK."
+                                        },
+                                        "data": {
+                                            "$ref": "#/components/schemas/JobStatus"
+                                        },
+                                        "errors": {
+                                            "example": null,
+                                            "nullable": true
+                                        },
+                                        "meta": {
+                                            "example": null,
+                                            "nullable": true
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthenticated.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorEnvelope"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Missing or not owned by the caller.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorEnvelope"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
         "/api/v1/me": {
             "get": {
                 "tags": [
@@ -1190,7 +1269,7 @@
                 ],
                 "properties": {
                     "success": {
-                        "description": "Shared response and resource shapes. Mirrors ApiResponse and resources.\n\nJobStatus is intentionally absent until that model lands.",
+                        "description": "Shared response and resource shapes. Mirrors ApiResponse and resources.",
                         "type": "boolean",
                         "example": true
                     },
@@ -1389,6 +1468,69 @@
                     }
                 },
                 "type": "object"
+            },
+            "JobStatus": {
+                "description": "JobStatusResource. Polled after an async write. user_id and internal id are never exposed; UUIDs are not enumerable across tenants.",
+                "required": [
+                    "uuid",
+                    "type",
+                    "status",
+                    "total",
+                    "processed",
+                    "failed_count",
+                    "result",
+                    "error",
+                    "created_at",
+                    "updated_at"
+                ],
+                "properties": {
+                    "uuid": {
+                        "type": "string",
+                        "format": "uuid"
+                    },
+                    "type": {
+                        "type": "string",
+                        "example": "bulk_complete_todos"
+                    },
+                    "status": {
+                        "type": "string",
+                        "enum": [
+                            "queued",
+                            "processing",
+                            "completed",
+                            "failed"
+                        ]
+                    },
+                    "total": {
+                        "type": "integer",
+                        "example": 10
+                    },
+                    "processed": {
+                        "type": "integer",
+                        "example": 4
+                    },
+                    "failed_count": {
+                        "type": "integer",
+                        "example": 0
+                    },
+                    "result": {
+                        "type": "object",
+                        "nullable": true
+                    },
+                    "error": {
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "created_at": {
+                        "type": "string",
+                        "format": "date-time"
+                    },
+                    "updated_at": {
+                        "type": "string",
+                        "format": "date-time"
+                    }
+                },
+                "type": "object"
             }
         },
         "securitySchemes": {
@@ -1412,6 +1554,10 @@
         {
             "name": "Todos",
             "description": "Per-user todos. Cross-tenant access returns 404, not 403."
+        },
+        {
+            "name": "Jobs",
+            "description": "Poll async job status. UUIDs are scoped to the caller."
         }
     ]
 }
