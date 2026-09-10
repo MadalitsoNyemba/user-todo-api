@@ -59,11 +59,6 @@ class ApiConventionsTest extends TestCase
         $response->assertJsonPath('success', false);
     }
 
-    /**
-     * Regression. abort() throws a plain HttpException for every status but
-     * 404, which matched none of the specific renderables and was previously
-     * reported as a generic 500 with the real status discarded.
-     */
     public function test_abort_preserves_its_status_and_message(): void
     {
         Route::middleware('api')->get('/api/v1/_conventions-abort', function () {
