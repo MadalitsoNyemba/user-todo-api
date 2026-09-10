@@ -18,10 +18,26 @@
         </include>
     </source>
     <php>
+        <!--
+            Docker Compose injects .env into $_SERVER. PHPUnit <env force="true">
+            updates putenv/$_ENV only, and Laravel's env() reads $_SERVER first,
+            so overrides that matter under compose must also be <server> entries.
+            Without that, CACHE_DRIVER stayed redis and rate-limit keys bled
+            across tests and into the running app.
+        -->
+        <server name="APP_ENV" value="testing"/>
+        <server name="BCRYPT_ROUNDS" value="4"/>
+        <server name="CACHE_DRIVER" value="array"/>
+        <server name="DB_DATABASE" value="user_todo_api_testing"/>
+        <server name="MAIL_MAILER" value="array"/>
+        <server name="PULSE_ENABLED" value="false"/>
+        <server name="QUEUE_CONNECTION" value="sync"/>
+        <server name="SESSION_DRIVER" value="array"/>
+        <server name="TELESCOPE_ENABLED" value="false"/>
+        <server name="JWT_SECRET" value="testing-secret-not-used-anywhere-else"/>
+
         <env name="APP_ENV" value="testing" force="true"/>
         <env name="BCRYPT_ROUNDS" value="4" force="true"/>
-        <!-- force: .env sets redis for the stack; tests must not share rate-limit
-             or JWT-blacklist keys with the running app or across suite runs. -->
         <env name="CACHE_DRIVER" value="array" force="true"/>
         <env name="DB_DATABASE" value="user_todo_api_testing" force="true"/>
         <env name="MAIL_MAILER" value="array" force="true"/>

@@ -21,20 +21,25 @@ use Illuminate\Support\Facades\Route;
 | findForUser and another user’s todo is indistinguishable from a missing one.
 | Job {uuid} is likewise scoped by user; UUIDs are not enumerable across tenants.
 |
+| Rate limits: public auth uses the `auth` limiter (email + IP). Everything
+| behind auth.jwt uses the `api` limiter (authenticated user).
+|
 */
 
 Route::prefix('v1')->name('api.v1.')->group(function (): void {
     Route::prefix('auth')->name('auth.')->group(function (): void {
-        Route::post('register', [AuthController::class, 'register'])->name('register');
-        Route::post('login', [AuthController::class, 'login'])->name('login');
+        Route::middleware('throttle:auth')->group(function (): void {
+            Route::post('register', [AuthController::class, 'register'])->name('register');
+            Route::post('login', [AuthController::class, 'login'])->name('login');
+        });
 
-        Route::middleware('auth.jwt')->group(function (): void {
+        Route::middleware(['auth.jwt', 'throttle:api'])->group(function (): void {
             Route::post('logout', [AuthController::class, 'logout'])->name('logout');
             Route::post('refresh', [AuthController::class, 'refresh'])->name('refresh');
         });
     });
 
-    Route::middleware('auth.jwt')->group(function (): void {
+    Route::middleware(['auth.jwt', 'throttle:api'])->group(function (): void {
         Route::get('me', [ProfileController::class, 'show'])->name('me.show');
         Route::patch('me', [ProfileController::class, 'update'])->name('me.update');
         Route::delete('me', [ProfileController::class, 'destroy'])->name('me.destroy');
