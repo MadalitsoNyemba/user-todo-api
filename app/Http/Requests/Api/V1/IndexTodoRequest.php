@@ -23,6 +23,7 @@ class IndexTodoRequest extends FormRequest
             'priority' => ['sometimes', 'nullable', new Enum(TodoPriority::class)],
             'sort' => ['sometimes', 'string', Rule::in(['due_date', 'created_at'])],
             'order' => ['sometimes', 'string', Rule::in(['asc', 'desc'])],
+            'page' => ['sometimes', 'integer', 'min:1'],
             'per_page' => ['sometimes', 'integer', 'min:1'],
         ];
     }
