@@ -1397,6 +1397,96 @@
                     }
                 ]
             }
+        },
+        "/api/v1/users": {
+            "get": {
+                "tags": [
+                    "Users"
+                ],
+                "summary": "List users (admin)",
+                "description": "Paginated list of every user. Restricted to the admin role via UserPolicy::viewAny. A normal authenticated user receives 403 (unlike cross-tenant todos, which stay 404).",
+                "operationId": "usersIndex",
+                "parameters": [
+                    {
+                        "name": "per_page",
+                        "in": "query",
+                        "description": "Page size (capped at 100).",
+                        "required": false,
+                        "schema": {
+                            "type": "integer",
+                            "minimum": 1,
+                            "example": 15
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Paginated users.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "required": [
+                                        "success",
+                                        "message",
+                                        "data",
+                                        "errors",
+                                        "meta"
+                                    ],
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": true
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "OK."
+                                        },
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/components/schemas/User"
+                                            }
+                                        },
+                                        "errors": {
+                                            "example": null,
+                                            "nullable": true
+                                        },
+                                        "meta": {
+                                            "$ref": "#/components/schemas/PaginationMeta"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Missing, invalid, expired or blacklisted token.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorEnvelope"
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "Authenticated but not an admin.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorEnvelope"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
         }
     },
     "components": {
@@ -1525,6 +1615,7 @@
                     "id",
                     "name",
                     "email",
+                    "role",
                     "created_at"
                 ],
                 "properties": {
@@ -1540,6 +1631,14 @@
                         "type": "string",
                         "format": "email",
                         "example": "alice@example.com"
+                    },
+                    "role": {
+                        "type": "string",
+                        "enum": [
+                            "user",
+                            "admin"
+                        ],
+                        "example": "user"
                     },
                     "created_at": {
                         "type": "string",
@@ -1692,7 +1791,11 @@
         },
         {
             "name": "Profile",
-            "description": "The authenticated user’s own account. No user index — listing others is admin-only."
+            "description": "The authenticated user’s own account."
+        },
+        {
+            "name": "Users",
+            "description": "Admin-only user directory. Non-admins receive 403."
         },
         {
             "name": "Todos",

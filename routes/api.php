@@ -6,6 +6,7 @@ use App\Http\Controllers\Api\V1\AuthController;
 use App\Http\Controllers\Api\V1\JobStatusController;
 use App\Http\Controllers\Api\V1\ProfileController;
 use App\Http\Controllers\Api\V1\TodoController;
+use App\Http\Controllers\Api\V1\UserController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -43,6 +44,8 @@ Route::prefix('v1')->name('api.v1.')->group(function (): void {
         Route::get('me', [ProfileController::class, 'show'])->name('me.show');
         Route::patch('me', [ProfileController::class, 'update'])->name('me.update');
         Route::delete('me', [ProfileController::class, 'destroy'])->name('me.destroy');
+
+        Route::get('users', [UserController::class, 'index'])->name('users.index');
 
         Route::get('todos', [TodoController::class, 'index'])->name('todos.index');
         Route::post('todos', [TodoController::class, 'store'])->name('todos.store');

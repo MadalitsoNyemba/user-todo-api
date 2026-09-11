@@ -8,7 +8,7 @@ use OpenApi\Attributes as OA;
 
 /**
  * OpenAPI operations for /api/v1/me. Kept off ProfileController so controllers
- * stay thin under review. No list-users operation — that is deferred.
+ * stay thin under review. Listing all users lives on UsersEndpoints (admin).
  */
 final class ProfileEndpoints
 {

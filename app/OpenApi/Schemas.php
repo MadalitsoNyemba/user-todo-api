@@ -87,11 +87,12 @@ use OpenApi\Attributes as OA;
 #[OA\Schema(
     schema: 'User',
     description: 'Public user representation (UserResource). Password is never included.',
-    required: ['id', 'name', 'email', 'created_at'],
+    required: ['id', 'name', 'email', 'role', 'created_at'],
     properties: [
         new OA\Property(property: 'id', type: 'integer', example: 1),
         new OA\Property(property: 'name', type: 'string', example: 'Alice Example'),
         new OA\Property(property: 'email', type: 'string', format: 'email', example: 'alice@example.com'),
+        new OA\Property(property: 'role', type: 'string', enum: ['user', 'admin'], example: 'user'),
         new OA\Property(
             property: 'created_at',
             type: 'string',

@@ -11,13 +11,15 @@ use App\Models\Todo;
 use App\Repositories\Contracts\TodoRepositoryInterface;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
+use Illuminate\Support\Facades\Gate;
 
 /**
  * Todo CRUD for the authenticated user. Filter, sort and pagination arguments
  * are assembled here so the controller stays a thin HTTP adapter.
  *
  * Missing or cross-tenant todos raise ModelNotFoundException → 404. A 403
- * would confirm the record exists and enable id enumeration.
+ * would confirm the record exists and enable id enumeration. TodoPolicy runs
+ * after the repository scopes the row, so ownership is enforced twice.
  *
  * Bulk complete is accepted as a redis job; the client polls JobStatus by uuid.
  */
@@ -42,6 +44,8 @@ class TodoService
         string $order = 'desc',
         ?int $perPage = null,
     ): LengthAwarePaginator {
+        Gate::authorize('viewAny', Todo::class);
+
         return $this->todos->paginateForUser(
             $userId,
             $this->capPerPage($perPage),
@@ -54,7 +58,10 @@ class TodoService
 
     public function find(int $userId, int $todoId): Todo
     {
-        return $this->findOwnedOrFail($userId, $todoId);
+        $todo = $this->findOwnedOrFail($userId, $todoId);
+        Gate::authorize('view', $todo);
+
+        return $todo;
     }
 
     /**
@@ -62,6 +69,8 @@ class TodoService
      */
     public function create(int $userId, array $attributes): Todo
     {
+        Gate::authorize('create', Todo::class);
+
         $attributes = $this->withCompletionTimestamps($attributes, previousCompleted: false);
 
         return $this->todos->createForUser($userId, $attributes);
@@ -73,6 +82,7 @@ class TodoService
     public function update(int $userId, int $todoId, array $attributes): Todo
     {
         $todo = $this->findOwnedOrFail($userId, $todoId);
+        Gate::authorize('update', $todo);
 
         $attributes = $this->withCompletionTimestamps(
             $attributes,
@@ -90,6 +100,9 @@ class TodoService
 
     public function delete(int $userId, int $todoId): void
     {
+        $todo = $this->findOwnedOrFail($userId, $todoId);
+        Gate::authorize('delete', $todo);
+
         if (! $this->todos->deleteForUser($userId, $todoId)) {
             throw (new ModelNotFoundException)->setModel(Todo::class, [$todoId]);
         }
