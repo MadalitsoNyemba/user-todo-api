@@ -52,12 +52,8 @@ An issue is done when all of the following hold:
 
 ## Architecture rules
 
-```
-Controller  ->  Service  ->  Repository  ->  Model
-     |             |
- Form Request  domain logic
- ApiResponse
-```
+![Layered architecture](docs/images/layered.png)
+
 
 - Validation lives in Form Request classes, never in controllers or services
 - Data access goes through a repository interface bound in `RepositoryServiceProvider`
