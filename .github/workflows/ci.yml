@@ -1,0 +1,136 @@
+name: CI
+
+on:
+  pull_request:
+    branches: [main, develop]
+  push:
+    branches: [develop]
+
+jobs:
+  test:
+    name: test
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      # HOST_UID and HOST_GID must be written before the image is built, not
+      # before it is run: the Dockerfile remaps www-data at build time via ARG.
+      # A runner's checkout is owned by uid 1001, not the 1000 the image
+      # defaults to, so without this the container cannot create vendor/ in the
+      # bind-mounted working directory.
+      - name: Configuration
+        run: |
+          cp .env.example .env
+          printf 'HOST_UID=%s\nHOST_GID=%s\n' "$(id -u)" "$(id -g)" >> .env
+          echo "Runner uid:gid is $(id -u):$(id -g)"
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      # Builds only the `app` service. `worker` shares the same context, target
+      # and image tag (user-todo-api:dev), so once it is loaded into the local
+      # image store `docker compose up` reuses it instead of rebuilding.
+      - name: Build application image (GitHub Actions layer cache)
+        run: |
+          docker buildx bake \
+            --file docker-compose.yml \
+            app \
+            --set "app.args.UID=$(id -u)" \
+            --set "app.args.GID=$(id -g)" \
+            --set "*.cache-from=type=gha" \
+            --set "*.cache-to=type=gha,mode=max" \
+            --load
+
+      - name: Verify the image user matches the runner
+        run: |
+          container_uid="$(docker compose run --rm -T app id -u)"
+          container_gid="$(docker compose run --rm -T app id -g)"
+          if [ "$container_uid" != "$(id -u)" ] || [ "$container_gid" != "$(id -g)" ]; then
+            echo "::error::Image built for uid ${container_uid}:gid ${container_gid}, runner is $(id -u):$(id -g). Build args did not apply."
+            exit 1
+          fi
+          echo "uid ${container_uid} matches"
+
+      - name: Start db and redis
+        run: docker compose up -d db redis
+
+      # Poll rather than sleep a fixed duration: the healthcheck intervals in
+      # docker-compose.yml (5s, up to 20 retries plus start_period) mean the
+      # time to "healthy" varies with runner load.
+      - name: Wait for db and redis to be healthy
+        run: |
+          timeout=180
+          elapsed=0
+          until [ "$(docker inspect -f '{{.State.Health.Status}}' utapi-db)" = "healthy" ] \
+             && [ "$(docker inspect -f '{{.State.Health.Status}}' utapi-redis)" = "healthy" ]; do
+            if [ "$elapsed" -ge "$timeout" ]; then
+              echo "::error::db and/or redis did not report healthy within ${timeout}s"
+              docker compose ps
+              exit 1
+            fi
+            sleep 3
+            elapsed=$((elapsed + 3))
+          done
+          echo "db and redis are healthy"
+
+      # composer install, then key:generate and jwt:secret, all via `run --rm`
+      # so they complete and write to .env *before* `up -d` creates the app and
+      # worker containers. env_file bakes values in at container creation, so
+      # anything generated afterwards by exec'ing into an already-running
+      # container is invisible to that container until it is recreated.
+      - name: Install Composer dependencies
+        run: docker compose run --rm -T app composer install
+
+      - name: Generate application key
+        run: docker compose run --rm -T -e HOME=/tmp app php artisan key:generate
+
+      - name: Generate JWT secret
+        run: |
+          docker compose run --rm -T -e HOME=/tmp app php artisan jwt:secret --force
+          grep '^JWT_SECRET=' .env
+          test -n "$(grep '^JWT_SECRET=' .env | cut -d= -f2)" || {
+            echo "::error::jwt:secret did not write a value to .env"
+            exit 1
+          }
+
+      - name: Start the application stack
+        run: docker compose up -d --force-recreate app worker
+
+
+      - name: Run migrations
+        run: docker compose exec -T -e HOME=/tmp app php artisan migrate
+
+      - name: Check code style
+        run: docker compose exec -T -e HOME=/tmp app vendor/bin/pint --test
+
+      # Generate the OpenAPI spec, then fail if the committed copy drifted.
+      # A stale committed spec looks authoritative and is worse than none.
+      - name: Generate OpenAPI docs and verify committed spec
+        run: |
+          docker compose exec -T -e HOME=/tmp app php artisan l5-swagger:generate
+          git diff --exit-code storage/api-docs/
+
+      - name: Run test suite
+        run: docker compose exec -T -e HOME=/tmp app vendor/bin/phpunit
+
+      - name: Show container logs
+        if: failure()
+        run: docker compose logs --no-color
+
+      - name: Tear down the stack
+        if: always()
+        run: docker compose down -v
+
+  build-production:
+    name: build-production
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build production image
+        run: docker build --target production .
