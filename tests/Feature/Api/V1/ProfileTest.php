@@ -25,7 +25,7 @@ class ProfileTest extends TestCase
         $response->assertJsonPath('success', true);
         $response->assertJsonPath('data.id', $user->id);
         $response->assertJsonPath('data.email', 'alice@example.com');
-        $response->assertJsonStructure(['data' => ['id', 'name', 'email', 'created_at']]);
+        $response->assertJsonStructure(['data' => ['id', 'name', 'email', 'role', 'created_at']]);
         $response->assertJsonMissingPath('data.password');
     }
 

@@ -58,9 +58,11 @@ so it stays an explicit step here.
 |---|---|---|
 | `alice@example.com` | `password` | user |
 | `bob@example.com` | `password` | user |
+| `admin@example.com` | `password` | admin |
 
-Two users rather than one, so tenant isolation can be checked by hand: log in
-as Alice, note a todo id, log in as Bob, request that id, receive a 404.
+Two regular users rather than one, so tenant isolation can be checked by hand:
+log in as Alice, note a todo id, log in as Bob, request that id, receive a 404.
+The admin account can call `GET /api/v1/users`; a normal user receives **403**.
 
 ## Services
 
@@ -196,7 +198,13 @@ Controllers stay thin: Form Requests validate, Services hold business rules,
 Repositories own persistence. See `CONTRIBUTING.md` for the layering rules.
 
 Todos belonging to another user return **404**, not 403 — a forbidden response
-would confirm the record exists and allow id enumeration.
+would confirm the record exists and allow id enumeration. Ownership is enforced
+in the todo repository and again in `TodoPolicy`.
+
+Roles are a string column (`user` / `admin`) with a `UserRole` enum — not
+spatie/laravel-permission. Two fixed roles do not justify that package’s tables
+and cache layer. `GET /api/v1/users` is admin-only via `UserPolicy::viewAny` and
+is the API’s genuine **403** path for authenticated callers.
 
 Public auth (`register` / `login`) is limited to **5 requests per minute** keyed
 on email plus IP. Authenticated routes are limited to **60 requests per minute**

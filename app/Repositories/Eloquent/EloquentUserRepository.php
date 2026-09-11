@@ -4,18 +4,22 @@ declare(strict_types=1);
 
 namespace App\Repositories\Eloquent;
 
+use App\Enums\UserRole;
 use App\Models\User;
 use App\Repositories\Contracts\UserRepositoryInterface;
+use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 
 class EloquentUserRepository implements UserRepositoryInterface
 {
     public function create(string $name, string $email, string $password): User
     {
         // The model casts password to hashed, so a plain value is correct here.
+        // role defaults to user in the migration / model cast.
         return User::create([
             'name' => $name,
             'email' => $email,
             'password' => $password,
+            'role' => UserRole::User,
         ]);
     }
 
@@ -27,6 +31,13 @@ class EloquentUserRepository implements UserRepositoryInterface
     public function findById(int $id): ?User
     {
         return User::find($id);
+    }
+
+    public function paginate(int $perPage): LengthAwarePaginator
+    {
+        return User::query()
+            ->orderBy('id')
+            ->paginate($perPage);
     }
 
     public function update(User $user, string $name, string $email, ?string $password = null): User
