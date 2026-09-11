@@ -173,13 +173,14 @@ class Handler extends ExceptionHandler
     }
 
     /**
-     * Any request under /api is answered in JSON whether or not the caller
-     * asked for it. expectsJson() alone is not enough: an unmatched route
-     * throws before the api middleware group ever runs, so the ForceJsonResponse
-     * middleware never gets the chance to set the header.
+     * This application has no web routes (see routes/web.php), so every
+     * response, including an unmatched route like the bare "/", is JSON.
+     * Gating on request->is('api/*') would let a request outside that
+     * prefix fall through to Laravel's default HTML/plain-text error page,
+     * which is exactly the leakage the brief asks not to have.
      */
     protected function shouldRenderJson(Request $request): bool
     {
-        return $request->is('api/*') || $request->expectsJson();
+        return true;
     }
 }

@@ -8,7 +8,7 @@
     "servers": [
         {
             "url": "/",
-            "description": "Current host (Compose maps the API to http://localhost:8080 by default)."
+            "description": "Current host (http://localhost:8080)."
         }
     ],
     "paths": {

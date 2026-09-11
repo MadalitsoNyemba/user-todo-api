@@ -13,7 +13,7 @@ use OpenApi\Attributes as OA;
 )]
 #[OA\Server(
     url: '/',
-    description: 'Current host (Compose maps the API to http://localhost:8080 by default).',
+    description: 'Current host (http://localhost:8080).',
 )]
 #[OA\SecurityScheme(
     securityScheme: 'bearerAuth',

@@ -13,7 +13,8 @@ use Symfony\Component\HttpFoundation\Response;
  *
  * Note this cannot help with an unmatched route: group middleware only runs
  * after a route matches, and the router throws NotFoundHttpException before
- * that. The exception handler covers that case by inspecting the path.
+ * that. The exception handler covers that case unconditionally instead, since
+ * this application has no web routes for a non-JSON response to be correct for.
  */
 class ForceJsonResponse
 {
