@@ -6,7 +6,7 @@ A dockerised RESTful API managing users and a per-user todo list. Layered Larave
 
 ![System overview](docs/images/overview.png)
 
-Preliminary, high-level view of how the containers work together — client, nginx, the app
+Preliminary, high-level view of how the containers work together, client, nginx, the app
 and worker (PHP-FPM), MySQL, and Redis as both queue driver and cache. See the
 [Architecture](#architecture) section below for the request-handling detail.
 
@@ -205,7 +205,7 @@ docker compose up -d --force-recreate app worker
 Controllers stay thin: Form Requests validate, Services hold business rules,
 Repositories own persistence. See `CONTRIBUTING.md` for the layering rules.
 
-Todos belonging to another user return **404**, not 403 — a forbidden response
+Todos belonging to another user return **404**, not 403, a forbidden response
 would confirm the record exists and allow id enumeration. Ownership is enforced
 in the todo repository and again in `TodoPolicy`.
 
