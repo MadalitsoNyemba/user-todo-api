@@ -102,18 +102,22 @@ class JwtGuardTest extends TestCase
         $response->assertJsonPath('message', 'Unauthenticated.');
     }
 
-    public function test_the_seeder_creates_both_demo_users_and_is_repeatable(): void
+    public function test_the_seeder_creates_demo_users_and_is_repeatable(): void
     {
         $this->seed(UserSeeder::class);
         $this->seed(UserSeeder::class);
 
-        $this->assertSame(2, User::whereIn('email', [
+        $this->assertSame(3, User::whereIn('email', [
             'alice@example.com',
             'bob@example.com',
+            'admin@example.com',
         ])->count());
 
         $this->assertTrue(
             auth()->validate(['email' => 'alice@example.com', 'password' => 'password'])
+        );
+        $this->assertTrue(
+            auth()->validate(['email' => 'admin@example.com', 'password' => 'password'])
         );
     }
 }
