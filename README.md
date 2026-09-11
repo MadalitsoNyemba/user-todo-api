@@ -2,6 +2,14 @@
 
 A dockerised RESTful API managing users and a per-user todo list. Layered Laravel 10 application (controllers to services to repositories) behind JWT authentication, with asynchronous work offloaded to Redis-backed queues.
 
+## Architecture at a glance
+
+![System overview](docs/images/overview.png)
+
+Preliminary, high-level view of how the containers work together — client, nginx, the app
+and worker (PHP-FPM), MySQL, and Redis as both queue driver and cache. See the
+[Architecture](#architecture) section below for the request-handling detail.
+
 ## Requirements
 
 - Docker Engine 24+ with Compose v2 (`docker compose`, not `docker-compose`)
