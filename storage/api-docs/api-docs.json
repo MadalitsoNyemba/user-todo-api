@@ -785,6 +785,7 @@
                     {
                         "name": "is_completed",
                         "in": "query",
+                        "description": "Accepts 1 or 0.",
                         "required": false,
                         "schema": {
                             "type": "boolean"

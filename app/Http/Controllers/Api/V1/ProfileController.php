@@ -23,6 +23,8 @@ class ProfileController extends Controller
         /** @var User $user */
         $user = auth()->user();
 
+        $this->authorize('view', $user);
+
         return ApiResponse::success(
             new UserResource($this->users->profile($user->id)),
             'OK.',
@@ -33,6 +35,8 @@ class ProfileController extends Controller
     {
         /** @var User $user */
         $user = auth()->user();
+
+        $this->authorize('update', $user);
 
         $updated = $this->users->update(
             $user,
@@ -48,6 +52,8 @@ class ProfileController extends Controller
     {
         /** @var User $user */
         $user = auth()->user();
+
+        $this->authorize('delete', $user);
 
         $this->users->deleteAccount($user);
 
