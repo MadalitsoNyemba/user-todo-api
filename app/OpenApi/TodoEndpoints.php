@@ -20,7 +20,7 @@ final class TodoEndpoints
         security: [['bearerAuth' => []]],
         tags: ['Todos'],
         parameters: [
-            new OA\Parameter(name: 'is_completed', in: 'query', required: false, schema: new OA\Schema(type: 'boolean')),
+            new OA\Parameter(name: 'is_completed', in: 'query', required: false, description: 'Accepts 1 or 0.', schema: new OA\Schema(type: 'boolean')),
             new OA\Parameter(name: 'priority', in: 'query', required: false, schema: new OA\Schema(type: 'string', enum: ['low', 'medium', 'high'])),
             new OA\Parameter(name: 'sort', in: 'query', required: false, schema: new OA\Schema(type: 'string', enum: ['due_date', 'created_at'], default: 'created_at')),
             new OA\Parameter(name: 'order', in: 'query', required: false, schema: new OA\Schema(type: 'string', enum: ['asc', 'desc'], default: 'desc')),

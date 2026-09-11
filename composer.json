@@ -1,8 +1,8 @@
 {
-    "name": "laravel/laravel",
+    "name": "madalitsonyemba/user-todo-api",
     "type": "project",
-    "description": "The skeleton application for the Laravel framework.",
-    "keywords": ["laravel", "framework"],
+    "description": "Dockerised RESTful API managing users and a per-user todo list, behind JWT auth with Redis-backed queues.",
+    "keywords": ["laravel", "api", "jwt", "todo"],
     "license": "MIT",
     "require": {
         "php": "^8.2",
